@@ -1,8 +1,9 @@
+#!/usr/bin/env python3
 # ----------------------------------------------------------------------------#
 # Imports
 # ----------------------------------------------------------------------------#
 
-from Fyyur.models import Shows, Venue, Artist, db, app
+from .models import Shows, Venue, Artist, db, app
 
 import json
 import dateutil.parser
