@@ -2,7 +2,7 @@
 # Imports
 # ----------------------------------------------------------------------------#
 
-from .models import Shows, Venue, Artist, db, app
+from Fyyur.models import Shows, Venue, Artist, db, app
 
 import json
 import dateutil.parser
