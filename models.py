@@ -1,14 +1,10 @@
 # ----------------------------------------------------------------------------#
 # Imports
 # ----------------------------------------------------------------------------#
-from . import db
-from . import create_app
+from app import db
 from datetime import datetime
-from . import config
 
 # DONE: connect to a local postgresql database
-
-app = create_app(config)
 
 # ----------------------------------------------------------------------------#
 # Models.
@@ -49,5 +45,3 @@ class Artist(db.Model):
     # TODO: implement any missing fields, as a database migration using Flask-Migrate
 
 # TODO Implement Show and Artist models, and complete all model relationships and properties, as a database migration.
-
-db.create_all(app=app)
