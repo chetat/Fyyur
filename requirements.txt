@@ -35,7 +35,6 @@ Jinja2==2.10.3
 Mako==1.1.0
 MarkupSafe==1.1.1
 mccabe==0.6.1
--e git+https://github.com/chetat/Fyyur.git@1b1d4327fec53a66723dc2899e9bf2101c12fc1e#egg=myproject
 mysql==0.0.2
 mysqlclient==1.4.6
 oauth2client==4.1.3
