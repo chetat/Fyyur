@@ -19,12 +19,19 @@ def create_app(config):
     app.config.from_object(config)
 
     initialize_extensions(app)
+    register_blueprints(app)
     migrate = Migrate(app, db)
+
     return app
 
 def initialize_extensions(app):
     moment.init_app(app)
     db.init_app(app)
+
+def register_blueprints(app):
+    from app.views import bp
+    app.register_blueprint(bp)
+
 
 
 

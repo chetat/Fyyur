@@ -1,12 +1,10 @@
 # ----------------------------------------------------------------------------#
 # Imports
 # ----------------------------------------------------------------------------#
+from app import db
 from datetime import datetime
-from . import db
-from sqlalchemy.dialects.postgresql import JSON
 
 # DONE: connect to a local postgresql database
-
 
 # ----------------------------------------------------------------------------#
 # Models.
