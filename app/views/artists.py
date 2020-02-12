@@ -5,14 +5,10 @@
 
 from models import Shows, Venue, Artist, db
 from . import bp
-import json
-from flask import Flask, render_template, request, Response, flash, redirect, url_for
+from flask import render_template, request, flash, redirect, url_for
 from datetime import datetime
-from flask_migrate import Migrate
-import logging
-from logging import Formatter, FileHandler
-from flask_wtf import Form
-from app.forms import *
+from app.forms import ArtistForm
+from app import format_datetime
 
 
 
@@ -24,7 +20,7 @@ def artists():
     all_artist = []
     try:
         all_artist = Artist.query.all()
-    except:
+    except Exception as e:
         db.session.rollback()
         db.session.close()
     data = []
@@ -34,14 +30,13 @@ def artists():
     return render_template("pages/artists.html", artists=all_artist)
 
 
-
-
 #  Create Artist
 #  ----------------------------------------------------------------
 @bp.route('/artists/create', methods=['GET'])
 def create_artist_form():
-  form = ArtistForm()
-  return render_template('forms/new_artist.html', form=form)
+    form = ArtistForm()
+    return render_template('forms/new_artist.html', form=form)
+
 
 @bp.route('/artists/create', methods=['POST'])
 def create_artist_submission():
@@ -59,24 +54,25 @@ def create_artist_submission():
     website = artist_form.website_link.data
     seeking_venue = artist_form.seeking_venue.data
     seeking_description = artist_form.seeking_description.data
-    artist = Artist(name=name, city=city, state=state, phone=phone,website_link=website, genres=genres, image_link=image_url,
-                    facebook_link=facebook_url, seeking_venue=seeking_venue, seeking_description=seeking_description)
+    artist = Artist(name=name, city=city, state=state, phone=phone,
+                    website_link=website, genres=genres, image_link=image_url,
+                    facebook_link=facebook_url, seeking_venue=seeking_venue,
+                    seeking_description=seeking_description)
     # TODO: modify data to be the data object returned from db insertion(DONE)
     try:
         db.session.add(artist)
         db.session.commit()
         flash("Artist " + artist.name + " was successfully listed!")
-    except:
+    except Exception as e:
         db.session.rollback()
         db.session.flush()
         flash("An error occurred. Artist " +
               artist.name + " could not be listed.")
         # TODO: on unsuccessful db insert, flash an error instead.
         # e.g., flash("An error occurred. Artist " + data.name + " could not be listed.")
-    # on successful db insert, flash success
-
+        # on successful db insert, flash success
+        print(e)
     return render_template("pages/home.html")
-
 
 
 @bp.route("/artists/search", methods=["POST"])
@@ -96,31 +92,39 @@ def search_artists():
 
     response = {
         "count": len(search_response),
-        "data":data
+        "data": data
     }
     return render_template("pages/search_artists.html", results=response,
                            search_term=request.form.get("search_term", ""))
+
 
 @bp.route('/artists/<int:artist_id>')
 def show_artist(artist_id):
     # shows the venue page with the given venue_id
     # TODO: replace with real artist data from the artist table, using artist_id
-    shows = db.session.query(Shows).filter(Shows.c.artist_id == artist_id).all()
-    # upcoming_shows = Artist.query.join(Shows).filter(Shows.c.start_time > datetime.utcnow()).all()
-    # past_shows = Artist.query.join(Shows).filter(Shows.c.start_time < datetime.utcnow(), Shows.c.artist_id == artist_id).all()
-
-    upcoming_shows = Venue.query.join(Shows).filter(Shows.c.start_time > datetime.now(), Shows.c.artist_id == artist_id).all()
-    past_shows = Venue.query.join(Shows).filter(Shows.c.start_time < datetime.now(), Shows.c.artist_id == artist_id).all()
+    shows = db.session.query(Shows).filter(Shows.c.artist_id == artist_id).all()   
+    venue_past_shows = []
+    venue_up_shows = []
     artist = Artist.query.filter_by(id=artist_id).first()
+    # shows the venue page with the given venue_id
+    # TODO: replace with real venue data from the venues table, using venue_id
+    data = None
 
-    upcoming_data = []
     for show in shows:
-        for venue in upcoming_shows:
-            upcoming_data.append({
-                    "venue_id": venue.id,
-                    "venue_name": venue.name,
-                    "venue_image_link": venue.image_link,
-                    "start_time":str(show.start_time)})
+        venue = Venue.query.filter_by(id=show.venue_id).first()
+        start_time = format_datetime(str(show.start_time))
+
+        venue_show = {
+            "venue_id": venue.id,
+            "venue_name": venue.name,
+            "venue_image_link": venue.image_link,
+            "start_time": str(start_time)
+        }
+        if show.start_time >= datetime.utcnow():
+            venue_up_shows.append(venue_show)
+        elif show.start_time < datetime.utcnow():
+            venue_past_shows.append(venue_show)
+
     data = {
             "id": artist.id,
             "name": artist.name,
@@ -133,14 +137,10 @@ def show_artist(artist_id):
             "image_link": artist.image_link,
             "seeking_venue": artist.seeking_venue,
             "seeking_description": artist.seeking_description,
-            "upcoming_shows_count": len(upcoming_shows),
-            "upcoming_shows":  upcoming_data,
-            "past_shows": [{
-                "venue_id": venue.id,
-                "venue_name": venue.name,
-                "venue_image_link": venue.image_link,
-                "start_time": str(show.start_time)} for venue in past_shows],
-            "past_shows_count": len(past_shows),
+            "upcoming_shows_count": len(venue_up_shows),
+            "upcoming_shows":  venue_up_shows,
+            "past_shows": venue_past_shows,
+            "past_shows_count": len(venue_past_shows),
 
         }
     return render_template("pages/show_artist.html", artist=data)
@@ -150,29 +150,36 @@ def show_artist(artist_id):
 @bp.route('/artists/<int:artist_id>/edit', methods=['GET'])
 def edit_artist(artist_id):
     form = ArtistForm()
-    artist = Artist.query.filter(id == artist_id).first()
-    artist = {
-        "id": artist.id,
-        "name": artist.name,
-        "genres": ["Rock n Roll"],
-        "city": artist.city,
-        "state": artist.state,
-        "phone": artist.phone,
-        "website": artist.website,
-        "facebook_link": "https://www.facebook.com/GunsNPetals",
-        "seeking_venue": True,
-        "seeking_description": "Looking for shows to perform at in the San Francisco Bay Area!",
-        "image_link": "https://images.unsplash.com/photo-1549213783-8284d0336c4f?ixlib=rb-1.2.1&ixid"
-                      "=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=300&q=80 "
-    }
+    artist = Artist.query.filter_by(id=artist_id).first()
+
+    form.name.data = artist.name
+    form.genres.data = artist.genres
+    form.city.data = artist.city
+    form.state.data = artist.state
+    form.phone.data = artist.phone
+    form.website_link.data = artist.website_link
+    form.facebook_link.data = artist.facebook_link
     # TODO: populate form with fields from artist with ID <artist_id>
-    return render_template("forms/edit_artist.html", form=form, artist=artist)
+    return render_template("forms/edit_artist.html",
+                           form=form, artist=artist)
 
 
 @bp.route('/artists/<int:artist_id>/edit', methods=['POST'])
 def edit_artist_submission(artist_id):
-  # TODO: take values from the form submitted, and update existing
-  # artist record with ID <artist_id> using the new attributes
+    # artist record with ID <artist_id> using the new attributes
+    # TODO: take values from the form submitted, and update existing
+    form = ArtistForm()
 
-  return redirect(url_for('show_artist', artist_id=artist_id))
+    artist = Artist.query.filter_by(id=artist_id).first()
 
+    artist.name = form.name.data
+    artist.genres = form.genres.data
+    artist.city = form.city.data
+    artist.state = form.state.data
+    artist.phone = form.phone.data
+    artist.website_link = form.website_link.data
+    artist.facebook_link = form.facebook_link.data
+
+    db.session.add(artist)
+    db.session.commit()
+    return redirect(url_for('bp.show_artist', artist_id=artist_id))

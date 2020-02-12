@@ -1,8 +1,4 @@
-
-
-
-
-#!/usr/bin/env python3
+# !/usr/bin/env python3
 # ----------------------------------------------------------------------------#
 # Imports
 # ----------------------------------------------------------------------------#
@@ -52,33 +48,31 @@ def shows():
 
 @bp.route('/shows/create')
 def create_shows():
-  # renders form. do not touch.
-  form = ShowForm()
-  return render_template('forms/new_show.html', form=form)
+    # renders form. do not touch.
+    form = ShowForm()
+    return render_template('forms/new_show.html', form=form)
 
 
 @bp.route('/shows/create', methods=['POST'])
 def create_show_submission():
-  # called to create new shows in the db, upon submitting new show listing form
-  # TODO: insert form data as a new Show record in the db, instead(DONE)
-  show_form = ShowForm()
+    # called to create new shows in the db, upon submitting new show listing form
+    # TODO: insert form data as a new Show record in the db, instead(DONE)
+    show_form = ShowForm()
 
-  artist_id = show_form.artist_id.data
-  venue_id = show_form.venue_id.data
-  start_time = show_form.start_time.data
+    artist_id = show_form.artist_id.data
+    venue_id = show_form.venue_id.data
+    start_time = show_form.start_time.data
 
-  show = Shows.insert().values(artist_id=artist_id,
+    show = Shows.insert().values(artist_id=artist_id,
                                  venue_id=venue_id, start_time=start_time)
-  try:
-      db.session.execute(show)
-      db.session.commit()
+    try:
+        db.session.execute(show)
+        db.session.commit()
         # on successful db insert, flash success
-      flash("Show was successfully listed!")
-  except Exception as e:
-      flash("An error occurred. Show could not be listed.")
-      db.session.rollback()
-      db.session.flush()
-      print(e)
-
-  return render_template("pages/home.html")
-
+        flash("Show was successfully listed!")
+    except Exception as e:
+        flash("An error occurred. Show could not be listed.")
+        db.session.rollback()
+        db.session.flush()
+        print(e)
+    return render_template("pages/home.html")
